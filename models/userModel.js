@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
 
-const User = new mongoose.Schema({
+const userSchema = new mongoose.Schema({
   name: {
     type: String,
     required: [true, 'A user must have a name'],
@@ -39,7 +39,39 @@ const User = new mongoose.Schema({
       },
       message: 'Passwords do not match'
     }
-  }
+  },
+  passwordChangedAt: Date
 });
+
+// Hash password
+userSchema.pre('save', async function(next) {
+  if (!this.isModified('password')) return next();
+
+  this.password = await bcrypt.hash(this.password, 12);
+
+  this.passwordConfirm = undefined;
+
+  next();
+});
+
+// Set password changed at if password is changed & user isn't new
+userSchema.pre('save', function(next) {
+  if (!this.isModified('password') || this.isNew) return next();
+
+  this.passwordChangedAt = Date.now() - 1000;
+
+  next();
+});
+
+// Methods
+
+userSchema.methods.correctPassword = async function(
+  candidatePassword,
+  currentPassword
+) {
+  return await bcrypt.compare(candidatePassword, currentPassword);
+};
+
+const User = mongoose.model('User', userSchema);
 
 module.exports = User;
