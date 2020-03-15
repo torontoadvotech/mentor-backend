@@ -18,10 +18,23 @@ const userSchema = new mongoose.Schema({
   photo: {
     type: String
   },
+  bio: {
+    type: String,
+    maxlength: [500, 'Maximum of 500 characters for bio']
+  },
   role: {
     type: String,
     enum: ['mentor', 'mentee', 'admin'],
     default: 'mentee'
+  },
+  location: {
+    type: {
+      type: String,
+      default: 'Point',
+      enum: ['Point']
+    },
+    coordinates: [Number],
+    description: String
   },
   password: {
     type: String,
@@ -40,7 +53,19 @@ const userSchema = new mongoose.Schema({
       message: 'Passwords do not match'
     }
   },
-  passwordChangedAt: Date
+  passwordChangedAt: Date,
+  mentors: [
+    {
+      type: mongoose.Schema.ObjectId,
+      ref: 'User'
+    }
+  ],
+  mentees: [
+    {
+      type: mongoose.Schema.ObjectId,
+      ref: 'User'
+    }
+  ]
 });
 
 // Hash password
