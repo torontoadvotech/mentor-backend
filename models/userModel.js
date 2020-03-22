@@ -68,6 +68,8 @@ const userSchema = new mongoose.Schema({
   ]
 });
 
+// Document Middleware
+
 // Hash password
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
@@ -84,6 +86,16 @@ userSchema.pre('save', function(next) {
   if (!this.isModified('password') || this.isNew) return next();
 
   this.passwordChangedAt = Date.now() - 1000;
+
+  next();
+});
+
+// Query Middleware
+userSchema.pre(/^find/, function(next) {
+  this.populate({
+    path: 'user',
+    select: 'name photo bio'
+  });
 
   next();
 });

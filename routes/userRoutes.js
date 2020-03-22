@@ -10,8 +10,20 @@ router.route('/login').post(authController.login);
 // Require login for all routes below here
 router.use(authController.protect);
 
-// Require Admin for all routes below here
+router.route('/updateMe').patch(userController.updateMe);
 
-router.route('/').get(userController.getAllUsers);
+// Require Admin for all routes below here
+router.use(authController.restrictTo('admin'));
+
+router
+  .route('/')
+  .get(userController.getAllUsers)
+  .post(userController.createUser);
+
+router
+  .route('/:id')
+  .get(userController.getUser)
+  .patch(userController.updateUser)
+  .delete(userController.deleteUser);
 
 module.exports = router;
