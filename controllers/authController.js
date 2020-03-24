@@ -18,10 +18,12 @@ const createSendToken = (user, statusCode, res) => {
 
   const cookieOptions = {
     expires: new Date(
+      // Convert from days to milliseconds
       Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
     ),
     httpOnly: true
   };
+  // Require https in production
   if (process.env.NODE_ENV === 'production') {
     cookieOptions.secure = true;
   }
@@ -52,6 +54,7 @@ exports.signup = catchAsync(async (req, res, next) => {
     passwordChangedAt: req.body.passwordChangedAt
   });
 
+  // Log user in after signup
   createSendToken(newUser, 201, res);
 });
 
@@ -66,18 +69,22 @@ exports.login = catchAsync(async (req, res, next) => {
     '+password'
   );
 
+  // Check if user exists and if it does ensure password is correct
   if (!user || !(await user.correctPassword(password, user.password))) {
     return next(new AppError('Incorrect email or password', 401));
   }
 
+  // Log the user in
   createSendToken(user, 201, res);
 });
 
 // Update / forgot password
 
 exports.updateMyPassword = catchAsync(async (req, res, next) => {
+  // req.user.id is coming from the protect middleware as user must be logged in to update password
   const user = await User.findById(req.user.id).select('+password');
 
+  // ensure current password matches
   if (!(await user.correctPassword(req.body.currentPassword, user.password))) {
     return next(new AppError('Your current password is incorrect'));
   }
@@ -103,6 +110,7 @@ exports.forgotMyPassword = catchAsync(async (req, res, next) => {
 
   await user.save({ validateBeforeSave: false });
 
+  // Create url for user to use to reset password
   const resetURL = `${req.protocol}://${req.get(
     'host'
   )}/api/v1/users/resetPassword/${resetToken}`;
@@ -110,6 +118,7 @@ exports.forgotMyPassword = catchAsync(async (req, res, next) => {
   const message = `Forgot your password? Submit a PATCH request with your new password and passwordConfirm to ${resetURL} \nIf you didn't forget your password please ignore this email!`;
 
   try {
+    // Send email to the user with the password reset link
     await sendEmail({
       email: user.email,
       subject: 'Your password reset token (valid for 10 minutes)',
@@ -121,6 +130,7 @@ exports.forgotMyPassword = catchAsync(async (req, res, next) => {
       message: 'Token sent to email'
     });
   } catch (error) {
+    // If the email fails to send delete the token and log the error
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;
     await user.save({ validateBeforeSave: false });
@@ -130,6 +140,8 @@ exports.forgotMyPassword = catchAsync(async (req, res, next) => {
 });
 
 exports.resetPassword = async (req, res, next) => {
+  // Hash the token provided and search users for the matching hashed token
+  // Limit search to only tokens that have not expired
   const hashedToken = crypto
     .createHash('sha256')
     .update(req.params.token)
@@ -144,6 +156,7 @@ exports.resetPassword = async (req, res, next) => {
     return next(new AppError('Token is invalid or expired', 400));
   }
 
+  // If the token is found save new password to user
   user.password = req.body.password;
   user.passwordConfirm = req.body.passwordConfirm;
   user.passwordResetExpires = undefined;
@@ -156,7 +169,9 @@ exports.resetPassword = async (req, res, next) => {
 };
 // Middlewares
 
+// Protect route to only be available to logged in users
 exports.protect = catchAsync(async (req, res, next) => {
+  // Get the JWT token from the authorization header if it exists
   let token;
 
   if (
@@ -174,8 +189,10 @@ exports.protect = catchAsync(async (req, res, next) => {
   // jwt.verify will throw an error and end the function if the payload has been altered or the token has expired
   const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
 
+  // Use the decoded payload (which was set as the user ID) to lookup the user
   const currentUser = await User.findById(decoded.id);
 
+  // If the user no longer exists or has recently changed the password send an error
   if (!currentUser) {
     return next(new AppError('User no longer exists'));
   }
@@ -186,11 +203,13 @@ exports.protect = catchAsync(async (req, res, next) => {
     );
   }
 
+  // Save the current user to the req object before moving on to the next middleware
   req.user = currentUser;
 
   next();
 });
 
+// Restrict certain routes to only certain types of users (eg. admins)
 exports.restrictTo = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {
