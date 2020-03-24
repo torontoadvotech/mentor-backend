@@ -10,6 +10,7 @@ const AppError = require('./utils/appError');
 
 const userRouter = require('./routes/userRoutes');
 const mentorRouter = require('./routes/mentorRoutes');
+const menteeRouter = require('./routes/menteeRoutes');
 
 const app = express();
 
@@ -53,6 +54,7 @@ app.use(express.static(`${__dirname}/public`));
 
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/mentors', mentorRouter);
+app.use('/api/v1/mentees', menteeRouter);
 
 app.all('*', (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));

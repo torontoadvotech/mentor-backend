@@ -4,13 +4,19 @@ const userController = require('../controllers/userController');
 
 const router = express.Router();
 
-router.route('/signup').post(authController.signup);
-router.route('/login').post(authController.login);
+router.post('/signup', authController.signup);
+router.post('/login', authController.login);
+router.post('/forgotMyPassword', authController.forgotMyPassword);
+router.patch('/resetPassword/:token', authController.resetPassword);
 
 // Require login for all routes below here
 router.use(authController.protect);
 
-router.route('/updateMe').patch(userController.updateMe);
+router.get('/getMe', userController.getMe, userController.getUser);
+router.patch('/updateMe', userController.updateMe);
+router.delete('/deleteMe', userController.deleteMe);
+
+router.patch('/updateMyPassword', authController.updateMyPassword);
 
 // Require Admin for all routes below here
 router.use(authController.restrictTo('admin'));

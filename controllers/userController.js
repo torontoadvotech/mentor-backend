@@ -3,6 +3,12 @@ const handlerFactory = require('./handlerFactory');
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
 
+exports.getMe = (req, res, next) => {
+  req.params.id = req.user.id;
+
+  next();
+};
+
 exports.updateMe = catchAsync(async (req, res, next) => {
   if (req.body.password || req.body.passwordConfirm) {
     return next(
@@ -23,6 +29,15 @@ exports.updateMe = catchAsync(async (req, res, next) => {
     data: {
       data: updatedUser
     }
+  });
+});
+
+exports.deleteMe = catchAsync(async (req, res, next) => {
+  await User.findByIdAndUpdate(req.user.id, { active: false });
+
+  res.status(204).json({
+    status: 'success',
+    data: null
   });
 });
 

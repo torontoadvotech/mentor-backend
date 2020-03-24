@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -53,7 +54,6 @@ const userSchema = new mongoose.Schema({
       message: 'Passwords do not match'
     }
   },
-  passwordChangedAt: Date,
   mentors: [
     {
       type: mongoose.Schema.ObjectId,
@@ -65,7 +65,15 @@ const userSchema = new mongoose.Schema({
       type: mongoose.Schema.ObjectId,
       ref: 'User'
     }
-  ]
+  ],
+  passwordChangedAt: Date,
+  passwordResetToken: String,
+  passwordResetExpires: Date,
+  active: {
+    type: Boolean,
+    default: true,
+    select: false
+  }
 });
 
 // Document Middleware
@@ -91,6 +99,15 @@ userSchema.pre('save', function(next) {
 });
 
 // Query Middleware
+
+// Only show active users
+userSchema.pre(/^find/, function(next) {
+  this.find({ active: { $ne: false } });
+
+  next();
+});
+
+// Populate referenced mentors/mentees
 userSchema.pre(/^find/, function(next) {
   this.populate({
     path: 'user',
@@ -120,6 +137,20 @@ userSchema.methods.changedPasswordAfter = function(JWTTimestamp) {
 
   // false means NOT changed
   return false;
+};
+
+userSchema.methods.createPasswordRefreshToken = function() {
+  const resetToken = crypto.randomBytes(32).toString('hex');
+
+  this.passwordResetToken = crypto
+    .createHash('sha256')
+    .update(resetToken)
+    .digest('hex');
+
+  // 10 minutes
+  this.passwordResetExpires = Date.now() + 10 * 60 * 1000;
+
+  return resetToken;
 };
 
 const User = mongoose.model('User', userSchema);

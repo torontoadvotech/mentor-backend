@@ -1,4 +1,4 @@
-const User = require('../models/userModel');
 const handlerFactory = require('./handlerFactory');
+const User = require('../models/userModel');
 
-exports.getAllMentors = handlerFactory.getAll(User);
+exports.getAllMentors = handlerFactory.getAll(User, 'mentor');
