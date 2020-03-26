@@ -14,4 +14,9 @@ router
     sessionController.requestSession
   );
 
+router.patch(
+  '/approveSession/:sessionId',
+  authController.restrictTo('mentor'),
+  sessionController.acceptSession
+);
 module.exports = router;
