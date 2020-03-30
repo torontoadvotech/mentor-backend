@@ -41,6 +41,16 @@ exports.deleteMe = catchAsync(async (req, res, next) => {
   });
 });
 
+exports.showOnly = role => {
+  return catchAsync(async (req, res, next) => {
+    const users = User.find({ role: role });
+
+    req.showOnlyQuery = users;
+
+    next();
+  });
+};
+
 exports.getAllUsers = handlerFactory.getAll(User);
 exports.getUser = handlerFactory.getOne(User);
 exports.updateUser = handlerFactory.updateOne(User);

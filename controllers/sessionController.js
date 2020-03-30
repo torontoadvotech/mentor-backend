@@ -1,10 +1,13 @@
 const catchAsync = require('../utils/catchAsync');
 const sendEmail = require('../utils/email');
+const handlerFactory = require('./handlerFactory');
 
 const Session = require('../models/sessionModel');
 const User = require('../models/userModel');
 
 exports.setMentorMenteeIds = (req, res, next) => {
+  // This is currently only setup for a logged in mentee on a route with a mentor param
+
   if (!req.body.mentor) req.body.mentor = req.params.mentorId;
   if (!req.body.mentee) req.body.mentee = req.user.id;
 
@@ -67,3 +70,5 @@ exports.acceptSession = catchAsync(async (req, res, next) => {
     console.log(error);
   }
 });
+
+exports.getAllSessions = handlerFactory.getAll(Session);

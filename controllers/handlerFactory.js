@@ -2,15 +2,17 @@ const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const ApiFeatures = require('../utils/apiFeatures');
 
-exports.getAll = (Model, role) => {
+exports.getAll = Model => {
   return catchAsync(async (req, res, next) => {
-    let roleFilter = {};
+    // To allow for nested GET sessions on mentor & mentee(hack)
+    let filter = {};
+    if (req.params.mentorId) filter = { mentor: req.params.mentorId };
+    if (req.params.menteeId) filter = { mentee: req.params.menteeId };
 
-    if (role) {
-      roleFilter = { role };
-    }
+    // Check if query has been set to show only mentors / mentees
+    const query = req.showOnlyQuery ? req.showOnlyQuery : Model.find(filter);
 
-    const features = new ApiFeatures(Model.find(roleFilter), req.query)
+    const features = new ApiFeatures(query, req.query)
       .filter()
       .sort()
       .limitFields()

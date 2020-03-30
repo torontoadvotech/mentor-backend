@@ -8,6 +8,10 @@ router.use(authController.protect);
 
 router
   .route('/')
+  .get(
+    authController.restrictTo('mentor', 'admin'),
+    sessionController.getAllSessions
+  )
   .post(
     authController.restrictTo('mentee'),
     sessionController.setMentorMenteeIds,
