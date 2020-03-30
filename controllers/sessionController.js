@@ -71,4 +71,15 @@ exports.acceptSession = catchAsync(async (req, res, next) => {
   }
 });
 
+exports.getMySessions = catchAsync(async (req, res, next) => {
+  const sessions = await Session.find({ [req.user.role]: req.user.id });
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      sessions
+    }
+  });
+});
+
 exports.getAllSessions = handlerFactory.getAll(Session);

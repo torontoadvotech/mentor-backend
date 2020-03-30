@@ -8,15 +8,14 @@ router.use(authController.protect);
 
 router
   .route('/')
-  .get(
-    authController.restrictTo('mentor', 'admin'),
-    sessionController.getAllSessions
-  )
+  .get(authController.restrictTo('admin'), sessionController.getAllSessions)
   .post(
     authController.restrictTo('mentee'),
     sessionController.setMentorMenteeIds,
     sessionController.requestSession
   );
+
+router.get('/mySessions', sessionController.getMySessions);
 
 router.patch(
   '/approveSession/:sessionId',
